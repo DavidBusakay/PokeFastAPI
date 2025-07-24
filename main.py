@@ -22,9 +22,9 @@ def get_numbers_of_pokemons() -> dict:
 
 @app.get("/pokemons")
 def get_all_pokemons() -> list[Pokemon]:
-    pokemons = select_all_pokemons()
+    rows = select_all_pokemons()
     response = []
-    for row in pokemons:
+    for row in rows:
         response.append(Pokemon(
             id=row[0],
             name=row[1],
@@ -63,22 +63,47 @@ def get_pokemon(id: int = Path(ge=1)) -> Pokemon:
 
 @app.post("/pokemon")
 def create_pokemon(pokemon: Pokemon) -> Pokemon:
-    pokemons = select_all_pokemons()
-    for row in pokemons:
-        if pokemon.id == row[0] and pokemon.name == row[1]:
-            raise HTTPException(409, "{pokemon.name} existe déjà !")
-   
-    response = insert_pokemon(pokemon)
+    rows = select_all_pokemons()
+    for row in rows:
+        r = row[1]
+        if pokemon.name.lower() == r.lower():
+            raise HTTPException(409, f"{pokemon.name} existe déjà !")
+
+    row = insert_pokemon(pokemon)
     return Pokemon(
-        id=response[0],
-        name=response[1],
-        types=response[2].split(", "),
-        total=response[3],
-        hp=response[4],
-        attack=response[5],
-        defense=response[6],
-        attack_special=response[7],
-        defense_special=response[8],
-        speed=response[9],
-        evolution_id=response[10]
+        id=row[0],
+        name=row[1],
+        types=row[2].split(", "),
+        total=row[3],
+        hp=row[4],
+        attack=row[5],
+        defense=row[6],
+        attack_special=row[7],
+        defense_special=row[8],
+        speed=row[9],
+        evolution_id=row[10]
+    )
+
+
+@app.put("/pokemon/{id}")
+def modify_pokemon(pokemon: Pokemon, id: int = Path(ge=1)) -> Pokemon:
+    if id != pokemon.id:
+        raise HTTPException(409, "ID corrompu ! L'ID dans le corps de la requete ne correspond pas à l'ID dans le chemin")
+    
+    row = update_pokemon(pokemon, id)
+    if row is None:
+        raise HTTPException(500, "Echec de la mise à jour du Pokémon")
+    
+    return Pokemon(
+        id=row[0],
+        name=row[1],
+        types=row[2].split(", "),
+        total=row[3],
+        hp=row[4],
+        attack=row[5],
+        defense=row[6],
+        attack_special=row[7],
+        defense_special=row[8],
+        speed=row[9],
+        evolution_id=row[10]
     )
